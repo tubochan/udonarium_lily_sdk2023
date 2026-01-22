@@ -1,16 +1,15 @@
 <!doctype html>
 <html>
+  <head>
+    <meta charset="utf-8" />
+    <script type="text/javascript">
+      window.onbeforeunload = function (e) {
+        e.returnValue = "ページを離れようとしています。よろしいですか？";
+      };
+    </script>
 
-<head>
-  <meta charset="utf-8">
-<script type="text/javascript">
-    window.onbeforeunload = function(e) {
-      e.returnValue = "ページを離れようとしています。よろしいですか？";
-    }
-</script>
-
-  <title>UdonariumLily 1.11.0</title>
-<!--
+    <title>UdonariumLily 1.12.0</title>
+    <!--
 
 0.02.0 立ち絵表示を12ポジションに、アクティブを手前に、他を薄く
 0.02.1 立ち絵表示非表示ボックス　サイズ調整機能追加
@@ -25,7 +24,7 @@
 秘話時は立ち絵が動作しないように変更、他バグ修正
 0.06.1 カウンタリモコンで対象や項目が未選択の際に警告を表示
 発言をしないの機能が共有インベントリ、個人インベントリで効かない現象を修正
-1.00.0 
+1.00.0
 初期配置の情報項目が共有されない状態になっていたことを修正。
 ジュークボックスBGMでタグ無しのBGM付カットインを停止し、
 タグ無しのBGM付カットインをでジュークボックスBGMを停止するように変更
@@ -131,7 +130,7 @@ bcdice-jsを3.2.0に更新
 1.03.0
 bcdice-jsを3.3.0に更新
 
-1.04.0b0 
+1.04.0b0
 本家ユドナにパーッケージのバージョン構成を合わせた。マージ処理は後日
 立ち絵指定@文法を修正、@文字列でも立ち絵を指定可能に、不完全一致でも引当を行う
 通信遅延時間の表示機能、通信途絶警告機能を追加
@@ -401,37 +400,47 @@ bcdice-jp 3.5.0に更新
 1.11.0
 ・バージョンをリリースバージョンに変更
 
+1.12.0
+・BCDISE更新 BCDise.js4.6.0
 
 
 -->
-  <base href="./">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/styles.css">
-</head>
+    <base href="./" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/styles.css" />
+  </head>
 
-<body>
-  <app-root>
-    <div class="sk-cube-grid">
-      <div class="sk-cube sk-cube1"></div>
-      <div class="sk-cube sk-cube2"></div>
-      <div class="sk-cube sk-cube3"></div>
-      <div class="sk-cube sk-cube4"></div>
-      <div class="sk-cube sk-cube5"></div>
-      <div class="sk-cube sk-cube6"></div>
-      <div class="sk-cube sk-cube7"></div>
-      <div class="sk-cube sk-cube8"></div>
-      <div class="sk-cube sk-cube9"></div>
-      <div class="sk-title">Now Loading.</div>
-    </div>
-  </app-root>
+  <body>
+    <app-root>
+      <div class="sk-cube-grid">
+        <div class="sk-cube sk-cube1"></div>
+        <div class="sk-cube sk-cube2"></div>
+        <div class="sk-cube sk-cube3"></div>
+        <div class="sk-cube sk-cube4"></div>
+        <div class="sk-cube sk-cube5"></div>
+        <div class="sk-cube sk-cube6"></div>
+        <div class="sk-cube sk-cube7"></div>
+        <div class="sk-cube sk-cube8"></div>
+        <div class="sk-cube sk-cube9"></div>
+        <div class="sk-title">Now Loading.</div>
+      </div>
+    </app-root>
 
-  <script type="text/yaml" src="./assets/config.yaml"></script>
-  <script type="text/javascript" src="https://www.youtube.com/iframe_api"></script>
-  <script type="text/javascript" src="https://cdn.webrtc.ecl.ntt.com/skyway-latest.min.js"></script>
-</body>
-
+    <script type="text/yaml" src="./assets/config.yaml"></script>
+    <script
+      type="text/javascript"
+      src="https://www.youtube.com/iframe_api"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.webrtc.ecl.ntt.com/skyway-latest.min.js"
+    ></script>
+  </body>
 </html>
