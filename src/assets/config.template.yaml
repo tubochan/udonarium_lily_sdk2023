@@ -1,10 +1,10 @@
 backend:
   mode: skyway2023  # 'skyway2023' または 'skyway'（旧SkyWay）
-  url: https://udonarium-backend.tubochan.workers.dev/  # バックエンドAPIのURL
+  url: https://your-backend-api.workers.dev/  # バックエンドAPIのURLを設定してください
 webrtc:  # 旧SkyWay用（mode: 'skyway' の場合のみ使用）
-  key: aaaaaaaa-bbbb-ccccc-dddd-eeeeeeeeeeee  # 旧SkyWay API Key
-  config: #未使用
-    iceServers: #未使用
+  key: your-skyway-api-key-here
+  config:
+    iceServers:
       - url: stun:stun.skyway.io:3478
       - url: turn:homeo@turn.bistri.com:80
         credential: homeo

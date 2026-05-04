@@ -1,15 +1,15 @@
-# See http://help.github.com/ignore-files/ for more about ignoring files.
-
 # compiled output
 /dist
 /tmp
 /out-tsc
 /.angular
-# Only exists if Bazel was run
 /bazel-out
 
 # dependencies
 /node_modules
+
+# Cloudflare Pages / Wrangler
+/.wrangler
 
 # profiling files
 chrome-profiler-events*.json
@@ -23,8 +23,6 @@ speed-measure-plugin*.json
 *.launch
 .settings/
 *.sublime-workspace
-
-# IDE - VSCode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -45,6 +43,8 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
-/src/assets/config.yaml
-/src/assets/config.yaml
+
+# Private Configuration
+# 自分の API キーやバックエンド URL を隠すために、このファイルはアップロード対象から外します。
+# 代わりに config.example.yaml などをリポジトリに含めることを推奨します。
 /src/assets/config.yaml

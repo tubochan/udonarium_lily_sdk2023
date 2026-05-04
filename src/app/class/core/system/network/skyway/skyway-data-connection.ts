@@ -1,10 +1,10 @@
 import { EventEmitter } from 'events';
 
-import { MessagePack } from '../util/message-pack';
-import { UUID } from '../util/uuid';
-import { setZeroTimeout } from '../util/zero-timeout';
-import { SkyWayStatsMonitor } from './skyway-stats-monitor';
-import { CandidateType, WebRTCStats } from './webrtc-stats';
+import { MessagePack } from '../../util/message-pack';
+import { UUID } from '../../util/uuid';
+import { setZeroTimeout } from '../../util/zero-timeout';
+import { WebRTCStatsMonitor } from '../webrtc/webrtc-stats-monitor';
+import { CandidateType, WebRTCStats } from '../webrtc/webrtc-stats';
 
 // @types/skywayを使用すると@types/webrtcが定義エラーになるので代替定義
 declare module PeerJs {
@@ -31,12 +31,13 @@ interface ReceivedChank {
   byteLength: number;
 };
 
+// 旧SkyWay用のデータコネクションクラス
 export class SkyWayDataConnection extends EventEmitter {
+  readonly open: boolean;
   private chunkSize = 15.5 * 1024;
   private receivedMap: Map<string, ReceivedChank> = new Map();
   private timeoutTimer: NodeJS.Timer = null;
 
-  get open(): boolean { return this.conn.open; }
   get remoteId(): string { return this.conn.remoteId; }
   get metadata(): any { return this.conn.metadata; }
   get bufferedAmount(): number { return this.conn._dc?.bufferedAmount ?? 0; }
@@ -57,6 +58,8 @@ export class SkyWayDataConnection extends EventEmitter {
 
   constructor(private conn: PeerJs.DataConnection) {
     super();
+    // openゲッターを接続状態に合わせて動的に定義
+    Object.defineProperty(this, 'open', { get: () => this.conn.open });
     conn.on('data', data => this.onData(data));
     conn.on('open', () => {
       this.stats = new WebRTCStats(this.getPeerConnection());
@@ -108,11 +111,11 @@ export class SkyWayDataConnection extends EventEmitter {
   }
 
   private startMonitoring() {
-    SkyWayStatsMonitor.add(this);
+    WebRTCStatsMonitor.add(this);
   }
 
   private stopMonitoring() {
-    SkyWayStatsMonitor.remove(this);
+    WebRTCStatsMonitor.remove(this);
   }
 
   async updateStatsAsync() {
@@ -198,7 +201,7 @@ export class SkyWayDataConnection extends EventEmitter {
   }
 }
 
-/* 
+/*
 SkyWay の DataConnection._startSendLoop() を取り替える.
 setInterval() に由来する遅延を解消するが skyway-js-sdk の更新次第で動作しなくなるので注意.
 

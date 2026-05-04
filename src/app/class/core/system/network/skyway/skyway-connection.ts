@@ -1,18 +1,14 @@
-import { compressAsync, decompressAsync } from '../util/compress';
-import { MessagePack } from '../util/message-pack';
-import { setZeroTimeout } from '../util/zero-timeout';
-import { Connection, ConnectionCallback } from './connection';
-import { PeerContext } from './peer-context';
-import { PeerSessionGrade } from './peer-session-state';
-import { SkyWayDataConnection } from './skyway-data-connection';
-import { CandidateType } from './webrtc-stats';
+import Peer from 'skyway-js';
 
-// @types/skywayを使用すると@types/webrtcが定義エラーになるので代替定義
-declare var Peer;
-declare module PeerJs {
-  export type Peer = any;
-  export type DataConnection = any;
-}
+import { compressAsync, decompressAsync } from '../../util/compress';
+import { MessagePack } from '../../util/message-pack';
+import { setZeroTimeout } from '../../util/zero-timeout';
+import { Connection, ConnectionCallback } from '../connection';
+import { IPeerContext, PeerContext } from '../peer-context';
+import { PeerSessionGrade } from '../peer-session-state';
+import { IRoomInfo, RoomInfo } from '../room-info';
+import { SkyWayDataConnection } from './skyway-data-connection';
+import { CandidateType } from '../webrtc/webrtc-stats';
 
 interface DataContainer {
   data: Uint8Array;
@@ -21,19 +17,23 @@ interface DataContainer {
   isCompressed?: boolean;
 }
 
+// 旧SkyWay（PeerJS）を使った接続クラス（後方互換性のために残す）
 export class SkyWayConnection implements Connection {
-  get peerId(): string { return this.peerContext ? this.peerContext.peerId : '???'; }
+  get peerId(): string { return this.peer ? this.peer.peerId : '???'; }
 
   private _peerIds: string[] = [];
-  get peerIds(): string[] { return this._peerIds }
+  get peerIds(): string[] { return this._peerIds; }
 
-  peerContext: PeerContext = PeerContext.parse('???');
+  private _peer: PeerContext = PeerContext.parse('???');
+  get peer(): PeerContext { return this._peer; }
+  get peers(): PeerContext[] { return this.peerContexts; }
+
   readonly peerContexts: PeerContext[] = [];
   readonly callback: ConnectionCallback = new ConnectionCallback();
   bandwidthUsage: number = 0;
 
   private key: string = '';
-  private peer: PeerJs.Peer;
+  private skywayPeer: any; // PeerJS Peer オブジェクト
   private connections: SkyWayDataConnection[] = [];
 
   private listAllPeersCache: string[] = [];
@@ -45,31 +45,38 @@ export class SkyWayConnection implements Connection {
   private relayingPeerIds: Map<string, string[]> = new Map();
   private maybeUnavailablePeerIds: Set<string> = new Set();
 
-  open(peerId: string)
-  open(userId: string, roomId: string, roomName: string, password: string)
+  // 設定を受け取るメソッド（新インターフェース対応）
+  configure(config: any) {
+    this.key = config?.webrtc?.key ?? '';
+  }
+
+  open(userId?: string): void;
+  open(userId: string, roomId: string, roomName: string, password: string): void;
   open(...args: any[]) {
     console.log('open', args);
-    if (args.length === 0) {
-      this.peerContext = PeerContext.create(PeerContext.generateId());
+    let peer: PeerContext;
+    if (args.length === 0 || args[0] == null) {
+      peer = PeerContext.create(PeerContext.generateId());
     } else if (args.length === 1) {
-      this.peerContext = PeerContext.create(args[0]);
+      peer = PeerContext.create(args[0]);
     } else {
-      this.peerContext = PeerContext.create(args[0], args[1], args[2], args[3]);
+      peer = PeerContext.create(args[0], args[1], args[2], args[3]);
     }
+    this._peer = peer;
     this.openPeer();
   }
 
   close() {
-    if (this.peer) this.peer.destroy();
+    if (this.skywayPeer) this.skywayPeer.destroy();
     this.disconnectAll();
-    this.peer = null;
-    this.peerContext = PeerContext.parse('???');
+    this.skywayPeer = null;
+    this._peer = PeerContext.parse('???');
   }
 
-  connect(peerId: string): boolean {
-    if (!this.shouldConnect(peerId)) return false;
+  connect(peerContext: IPeerContext): boolean {
+    if (!this.shouldConnect(peerContext.peerId)) return false;
 
-    let conn: SkyWayDataConnection = new SkyWayDataConnection(this.peer.connect(peerId, {
+    let conn: SkyWayDataConnection = new SkyWayDataConnection(this.skywayPeer.connect(peerContext.peerId, {
       serialization: 'none',
       metadata: { sendFrom: this.peerId }
     }));
@@ -79,7 +86,7 @@ export class SkyWayConnection implements Connection {
   }
 
   private shouldConnect(peerId: string): boolean {
-    if (!this.peerContext || !this.peer || !this.peerId) {
+    if (!this.peer || !this.skywayPeer || !this.peerId) {
       console.log('connect() is Fail. IDが割り振られるまで待てや');
       return false;
     }
@@ -98,8 +105,8 @@ export class SkyWayConnection implements Connection {
     return false;
   }
 
-  disconnect(peerId: string): boolean {
-    let conn = this.findDataConnection(peerId)
+  disconnect(peerContext: IPeerContext): boolean {
+    let conn = this.findDataConnection(peerContext.peerId);
     if (!conn) return false;
     this.closeDataConnection(conn);
     return true;
@@ -117,7 +124,7 @@ export class SkyWayConnection implements Connection {
     let container: DataContainer = {
       data: MessagePack.encode(data),
       ttl: 1
-    }
+    };
 
     let byteLength = container.data.byteLength;
     this.bandwidthUsage += byteLength;
@@ -153,6 +160,7 @@ export class SkyWayConnection implements Connection {
     }
   }
 
+  // 旧SkyWay互換メソッド（configure()に移行したが外部から呼ばれる可能性があるため残す）
   setApiKey(key: string) {
     if (this.key !== key) console.log('Key Change');
     this.key = key;
@@ -160,7 +168,7 @@ export class SkyWayConnection implements Connection {
 
   listAllPeers(): Promise<string[]> {
     return new Promise((resolve, reject) => {
-      if (!this.peer) return resolve([]);
+      if (!this.skywayPeer) return resolve([]);
       let now = performance.now();
       if (now < this.httpRequestInterval) {
         console.warn('httpRequestInterval... ' + (this.httpRequestInterval - now));
@@ -168,33 +176,38 @@ export class SkyWayConnection implements Connection {
         return;
       }
       this.httpRequestInterval = now + 6000;
-      this.peer.listAllPeers((list) => {
+      this.skywayPeer.listAllPeers((list) => {
         this.listAllPeersCache = list.concat();
         resolve(list);
       });
     });
   }
 
+  async listAllRooms(): Promise<IRoomInfo[]> {
+    let allPeerIds = await this.listAllPeers();
+    return RoomInfo.listFrom(allPeerIds);
+  }
+
   private openPeer() {
-    if (this.peer) {
+    if (this.skywayPeer) {
       console.warn('It is already opened.');
       this.close();
     }
-    let peer = new Peer(this.peerContext.peerId, { key: this.key });// SkyWay
+    let peer = new Peer(this.peer.peerId, { key: this.key }); // 旧SkyWay
     peer.on('open', id => {
       console.log('My peer ID is: ' + id);
-      if (!this.peerContext || this.peerContext.peerId !== id) {
-        this.peerContext = PeerContext.parse(id);
+      if (!this.peer || this.peer.peerId !== id) {
+        this._peer = PeerContext.parse(id);
       }
-      this.peerContext.isOpen = true;
-      console.log('My peer Context', this.peerContext);
+      this._peer.isOpen = true;
+      console.log('My peer Context', this.peer);
       if (this.callback.onOpen) this.callback.onOpen(this.peerId);
     });
 
     peer.on('close', () => {
       console.log('Peer close');
-      if (this.peerContext && this.peerContext.isOpen) {
-        this.peerContext.isOpen = false;
+      if (this.peer && this.peer.isOpen) {
+        this._peer.isOpen = false;
         if (this.callback.onClose) this.callback.onClose(this.peerId);
       }
     });
@@ -208,15 +221,15 @@ export class SkyWayConnection implements Connection {
       let errorMessage = `${this.getSkyWayErrorMessage(err.type)}\n\n${err.type}: ${err.message}`;
       switch (err.type) {
         case 'peer-unavailable':
-          let peerId = /"(.+)"/.exec(err.message)[1];
-          this.disconnect(peerId);
+          let peerId = /\"(.+)\"/.exec(err.message)[1];
+          this.disconnect(PeerContext.parse(peerId));
           break;
         case 'disconnected':
         case 'socket-error':
         case 'unavailable-id':
         case 'authentication':
         case 'server-error':
-          if (this.peerContext && this.peerContext.isOpen) {
+          if (this.peer && this.peer.isOpen) {
             this.close();
             if (this.callback.onClose) this.callback.onClose(this.peerId);
           }
@@ -226,7 +239,7 @@ export class SkyWayConnection implements Connection {
       }
       if (this.callback.onError) this.callback.onError(this.peerId, err.type, errorMessage, err);
     });
-    this.peer = peer;
+    this.skywayPeer = peer;
   }
 
   private openDataConnection(conn: SkyWayDataConnection) {
@@ -258,29 +271,31 @@ export class SkyWayConnection implements Connection {
       let ping = healthRate < 1 ? deltaTime : conn.ping;
       let pingRate = 500 / (ping + 500);
 
-      context.session.health = healthRate;
-      context.session.ping = ping;
-      context.session.speed = pingRate * healthRate;
+      if (context) {
+        context.session.health = healthRate;
+        context.session.ping = ping;
+        context.session.speed = pingRate * healthRate;
 
-      switch (conn.candidateType) {
-        case CandidateType.HOST:
-          context.session.grade = PeerSessionGrade.HIGH;
-          break;
-        case CandidateType.SRFLX:
-        case CandidateType.PRFLX:
-          context.session.grade = PeerSessionGrade.MIDDLE;
-          break;
-        case CandidateType.RELAY:
-          context.session.grade = PeerSessionGrade.LOW;
-          break;
-        default:
-          context.session.grade = PeerSessionGrade.UNSPECIFIED;
-          break;
-      }
-      context.session.description = conn.candidateType;
+        switch (conn.candidateType) {
+          case CandidateType.HOST:
+            context.session.grade = PeerSessionGrade.HIGH;
+            break;
+          case CandidateType.SRFLX:
+          case CandidateType.PRFLX:
+            context.session.grade = PeerSessionGrade.MIDDLE;
+            break;
+          case CandidateType.RELAY:
+            context.session.grade = PeerSessionGrade.LOW;
+            break;
+          default:
+            context.session.grade = PeerSessionGrade.UNSPECIFIED;
+            break;
+        }
+        context.session.description = conn.candidateType;
 
-      if (context.session.health < 0.2) {
-        this.closeDataConnection(conn);
+        if (context.session.health < 0.2) {
+          this.closeDataConnection(conn);
+        }
       }
     });
   }
@@ -288,7 +303,9 @@ export class SkyWayConnection implements Connection {
   private closeDataConnection(conn: SkyWayDataConnection) {
     conn.close();
     let index = this.connections.indexOf(conn);
+    let context: PeerContext = null;
     if (0 <= index) {
+      context = this.peerContexts[index];
       console.log(conn.remoteId + ' is えんいー' + 'index:' + index + ' length:' + this.connections.length);
       this.connections.splice(index, 1);
       this.peerContexts.splice(index, 1);
@@ -358,10 +375,10 @@ export class SkyWayConnection implements Connection {
     if (relayingPeerIds == null) return;
 
     for (let peerId of relayingPeerIds) {
-      let conn = this.findDataConnection(peerId);
-      if (conn && conn.open) {
+      let relayConn = this.findDataConnection(peerId);
+      if (relayConn && relayConn.open) {
         console.log('<' + peerId + '> 転送しなきゃ・・・');
-        conn.send(container);
+        relayConn.send(container);
       }
     }
   }
@@ -378,7 +395,7 @@ export class SkyWayConnection implements Connection {
 
     if (unknownPeerIds.length) {
       for (let peerId of unknownPeerIds) {
-        if (!this.maybeUnavailablePeerIds.has(peerId) && this.connect(peerId)) {
+        if (!this.maybeUnavailablePeerIds.has(peerId) && this.connect(PeerContext.parse(peerId))) {
           console.log('auto connect to unknown Peer <' + peerId + '>');
         }
       }
@@ -410,7 +427,7 @@ export class SkyWayConnection implements Connection {
       data: MessagePack.encode([]),
       peers: this._peerIds,
       ttl: 1
-    }
+    };
     this.sendBroadcast(container);
   }
 
@@ -429,11 +446,9 @@ export class SkyWayConnection implements Connection {
       case 'authentication': return '認証エラーです。';
       case 'server-error': return 'SkyWay のシグナリングサーバとの接続中に問題がありました。 少し待って、リトライしてください。';
       case 'sfu-client-not-supported': return 'このクライアントは SFU の使用をサポートしていません。最新の Google Chrome を使用してください';
-      case 'peer-unavailable': return 'Peer へデータを送信できませんでした。Peer ID が正しいことを確認してください。';
       case 'signaling-limited': return 'シグナリング回数が無償利用枠を超過しているため、全ての機能が利用できません。（SkyWay Community Edition のみ）';
       case 'sfu-limited': return 'SFU サーバの利用量が無償利用枠を超過しているため、SFU の機能が利用できません。（SkyWay Community Edition のみ）';
       case 'turn-limited': return 'TURN サーバの利用量が無償利用枠を超過しているため、TURN の機能が利用できません。（SkyWay Community Edition のみ）\nこの状態では、一部のユーザの接続に問題が発生する可能性があります。';
-      case 'peer-unavailable': return 'そのPeer IDは利用できません。';
       default: return 'SkyWayに関する不明なエラーが発生しました。';
     }
   }

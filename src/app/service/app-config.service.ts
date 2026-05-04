@@ -5,6 +5,12 @@ import { EventSystem } from '@udonarium/core/system';
 import * as yaml from 'js-yaml';
 
 export interface AppConfig {
+  // 新SkyWay（@skyway-sdk/core）向け設定
+  backend: {
+    mode: string,
+    url: string
+  },
+  // 旧SkyWay（PeerJS/skyway-js）向け設定
   webrtc: {
     key: string,
     config?: {
@@ -30,6 +36,10 @@ export class AppConfigService {
   isOpen: boolean = false;
 
   static appConfig: AppConfig = {
+    backend: {
+      mode: 'skyway',
+      url: ''
+    },
     webrtc: {
       key: ''
     },

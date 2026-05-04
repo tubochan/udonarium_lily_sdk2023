@@ -1,4 +1,66 @@
-# ユドナリウムリリィ
+# ユドナリウムリリィ (SkyWay 2023 対応版)
+
+本プロジェクトは、円柱(entyu)様による「[ユドナリウムリリィ](https://github.com/entyu/udonarium_lily)」をベースに、**SkyWay 2023 SDK (@skyway-sdk/core)** に対応させた有志によるフォーク版です。
+
+オリジナルの作者である円柱様、および本家ユドナリウムの作者である TK11235 様に深く感謝いたします。
+
+## 📢 本フォーク版の目的
+従来の SkyWay (旧PeerJSベース) API の提供終了に伴い、最新の SkyWay 2023 SDK で動作するようにネットワーク層および周辺機能を刷新しました。これにより、今後も継続してユドナリウムリリィを利用することが可能になります。
+
+---
+
+## 🛠 改修内容の詳細
+
+本バージョンでは、以下の技術的な変更を行っています。
+
+### 1. ネットワーク層の刷新
+- **SkyWay 2023 SDK の導入**: `skyway-js` (旧) から `@skyway-sdk/core` (新) へ完全に移行しました。
+- **動的ネットワーク切替**: `src/assets/config.yaml` の設定により、旧SkyWayと新SkyWayを切り替えて動作させることが可能です（デフォルトは新API）。
+- **認証バックエンド連携**: 新SDKで必須となる認証トークン取得のため、外部の Web API (Cloudflare Workers 等) と通信する `SkyWayBackend` クラスを実装しました。
+
+### 2. ロビーおよび接続ロジックの修正
+- **ルーム一覧取得の刷新**: 従来の PeerJS による検索から、SkyWay 2023 のチャネル（Room）メタデータを使用したルーム一覧取得方式へ変更しました。
+- **IDハッシュ化**: セキュリティと整合性のため、チャネル名にはルーム情報のハッシュ値を使用するように変更しました。
+
+### 3. ビルド環境および依存関係の改善
+- **TypeScript 設定**: パッケージの互換性向上のため `allowSyntheticDefaultImports: true` を有効化しました。
+- **パッケージ管理**: 全ての SkyWay 関連ライブラリを `package.json` による管理に統合し、`index.html` からの外部CDN読み込みを廃止しました。
+
+---
+
+## 🚀 使い方
+
+### 1. バックエンドサーバの準備
+SkyWay 2023 SDK を利用するには、認証トークンを発行するためのバックエンドサーバが必要です。
+[udonarium-backend](https://github.com/TK11235/udonarium-backend) 等をデプロイし、その URL を取得してください。
+
+### 2. 設定ファイルの編集
+`src/assets/config.yaml` を開き、以下の項目を設定します。
+
+```yaml
+backend:
+  mode: skyway2023
+  url: https://your-backend-api.workers.dev/  # 取得したバックエンドのURL
+```
+
+### 3. ビルドと設置
+1. `npm install` で依存関係をインストール。
+2. `npm run build` でプロダクションビルドを作成。
+3. `dist/udonarium_lily` の内容を Web サーバに配置してください。
+
+※ デプロイ先が HTTPS である必要があります（SkyWay 2023 の制約）。
+
+---
+
+## 📜 ライセンス・著作権
+- 本家ユドナリウム（TK11235 様）およびユドナリウムリリィ（円柱 様）の著作権を尊重します。
+- 本プロジェクトも同様に **MITライセンス** を引き継ぎます。
+- 追加・変更されたコードについては、本フォーク版のコントリビューターに帰属しますが、ライセンスの範囲内で自由にご利用いただけます。
+
+---
+以下、オリジナルの README 内容です。
+
+---------
 
 このプロジェクトはユドナリウムをカスタマイズするために分岐し作成しました
 
@@ -12,82 +74,14 @@
 
 
 ■立ち絵
-
 ■発言に色を付ける
-
 ■ログの書き出し、消去機能
-
 ■カウンターリモコン
-
 ■バフデバフ表示
-
 ■ダイス表
-
 ■画像タグ
-
 ■ポップアップ等のUI調整機能
 
 を追加実装しています。
 
 ![lily_sample](https://user-images.githubusercontent.com/61339319/95869259-26b41380-0da6-11eb-96fa-1e6c6858c531.png)
-
-
----------以下本家からの一部抜粋です---------------
-
-https://github.com/TK11235/udonarium
-
-## サーバ設置
-ユーザ自身でWebサーバを用意し、そのサーバにユドナリウムリリィを設置して利用することができます。  
-以下のファイルをダウンロードして解凍し、Webサーバに配置してください。  
-v1.05.0からYouTubeカットイン機能があります。YouTubeの規約もご確認ください。
-
-
-最新版v1.11.0
-
-https://github.com/entyu/udonarium_lily/releases/download/v1.11.0_/udonarium_lily_v1.11.0.zip
-
-旧バージョン
-
-https://github.com/entyu/udonarium_lily/releases/download/V1.10.1/udonarium_lily-v1.10.1.zip
-
-https://github.com/entyu/udonarium_lily/releases/download/v1.10.0/udonarium_lily-v1.10.0.zip
-
-https://github.com/entyu/udonarium_lily/releases/download/v1.09.1/udonarium_lily-v1.09.1.zip
-
-https://github.com/entyu/udonarium_lily/releases/download/v1.09.0/udonarium_lily-v1.09.0.zip
-
-https://github.com/entyu/udonarium_lily/releases/download/v1.08.1/udonarium_lily-v1.08.1.zip
-
-https://github.com/entyu/udonarium_lily/releases/download/v1.08.0/udonarium_lily-v1.08.0.zip
-
-https://github.com/entyu/udonarium_lily/releases/download/v1.07.0/udonarium_lily-v1.07.0.zip
-
-https://github.com/entyu/udonarium_lily/releases/download/v1.06.0/udonarium_lily-v1.06.0.zip
-
-https://github.com/entyu/udonarium_lily/releases/download/v1.05.0/udonarium_lily-v1.05.0.zip
-
-https://github.com/entyu/udonarium_lily/releases/download/%EF%BD%961.04.0/udonarium_lily-v1.04.0.zip
-
-https://github.com/entyu/udonarium_lily/releases/download/v1.03.0/udonarium_lily-v1.03.0.zip
-
-https://github.com/entyu/udonarium_lily/releases/download/v1.02.2/udonarium_lily-v1.02.2.zip
-
-https://github.com/entyu/udonarium_lily/releases/download/v1.02.1/udonarium_lily-v1.02.1.zip
-
-
-**開発者向けのソースコードをダウンロードしないように注意して下さい。**
-1. [SkyWay](https://webrtc.ecl.ntt.com/)のAPIキーを取得し、APIキー情報を`assets/config.yaml`に記述します。
-1. サーバに配置したユドナリウムの`index.html`にアクセスして動作することを確認してみてください。  
-ユドナリウムリリィはサーバーサイドの処理を持たないので、CGIやデータベースは必要はありません。
-
-#### SkyWay
-このアプリケーションは通信処理にWebRTCを使用しています。  
-WebRTC向けのシグナリングサーバとして[SkyWay](https://webrtc.ecl.ntt.com/)を利用しているため、動作確認のためにSkyWayのAPIキーが必要です。
-取得したAPIキーの情報は`src/assets/config.yaml`に記述します。
-
-#### そのほか難しいこと
-本家と同じなので本家の udonarium の説明を参照してください。
-自力コンパイルするかたへｖ1.02.0より--prodで自動生成される 3rdpartylicenses.txt にソフト内リンクが貼られるようにしてあります。
-つけないと生成されずlicensesへのリンクが切れるのでご注意ください。
-
-
