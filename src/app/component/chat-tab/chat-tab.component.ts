@@ -38,8 +38,10 @@ const isiOS = ua.indexOf('iphone') > -1 || ua.indexOf('ipad') > -1 || ua.indexOf
 })
 export class ChatTabComponent implements OnInit, AfterViewInit, OnDestroy, OnChanges, AfterViewChecked {
   sampleMessages: ChatMessageContext[] = [
-    { from: 'System', timestamp: 0, imageIdentifier: '', tag: '', name: 'チュートリアル', text: '本ソフトに使用している 3rdpartylicenses についてはこちらを参照してください ' + location.href.replace('/index.html', '' ).replace(/\/$/, '') + '/3rdpartylicenses.txt' },
+    { from: 'System', timestamp: 0, imageIdentifier: '', tag: '', name: 'チュートリアル', text: '本ソフトに使用している 3rdpartylicenses についてはこちらを参照してください ' + location.href.replace('/index.html', '').replace(/\/$/, '') + '/3rdpartylicenses.txt' },
     { from: 'System', timestamp: 0, imageIdentifier: '', tag: '', name: 'チュートリアル', text: '本ソフトのソースコード開発に寄与してくださった方についてはこちらを参照してください https://github.com/entyu/udonarium_lily' },
+    { from: 'System', timestamp: 0, imageIdentifier: '', tag: '', name: 'チュートリアル', text: '本ソフトはSkyway2023への暫定対応版です。対応内容等についてはこちらを参照してください https://github.com/tubochan/udonarium_lily_sdk2023' },
+    { from: 'System', timestamp: 0, imageIdentifier: '', tag: '', name: 'チュートリアル', text: '個人による対応のため予告なく利用できなくなる場合があります。' },
     { from: 'System', timestamp: 0, imageIdentifier: '', tag: '', name: 'チュートリアル', text: 'サーバーを使用しないTRPGオンセツールです。参加者同士で接続し、コマや画像ファイルなどを同期します。' },
     { from: 'System', timestamp: 0, imageIdentifier: '', tag: '', name: 'チュートリアル', text: '全てのデータが各参加者のブラウザ内にあるため、ルームの状態を次回に持ち越したい場合は、必ず「保存」を実行してセーブデータ（zip）を生成してください。保存したzipの読み込みはブラウザ画面へのファイルドロップで行えます。' },
     { from: 'System', to: '???', timestamp: 0, imageIdentifier: '', tag: '', name: 'チュートリアル > プレイヤー', text: 'ダイレクトメッセージ（秘密会話）はセーブデータに記録されません。' },
@@ -68,10 +70,10 @@ export class ChatTabComponent implements OnInit, AfterViewInit, OnDestroy, OnCha
   private _minMessageHeight = 26;
   private _minMessageHeightNormal = 61;
 
-  get minMessageHeight(){
+  get minMessageHeight() {
 
-    if ( this.chatTab ){
-      if ( this.chatTab.chatSimpleDispFlag ){
+    if (this.chatTab) {
+      if (this.chatTab.chatSimpleDispFlag) {
         return this._minMessageHeight;
       }
     }
@@ -95,19 +97,19 @@ export class ChatTabComponent implements OnInit, AfterViewInit, OnDestroy, OnCha
     return this._chatMessages;
   }
 
-  private chatMessagesDisplayableTopIndex(chatMessages: ChatMessage[], dispLength: number): number{
+  private chatMessagesDisplayableTopIndex(chatMessages: ChatMessage[], dispLength: number): number {
     let len = chatMessages.length;
     let count = 0;
-    let i = len - 1 ;
-    for ( ; i >= 0 ; i--) {
+    let i = len - 1;
+    for (; i >= 0; i--) {
       if (chatMessages[i].isDisplayable) count++;
-      if ( count >= dispLength) return i;
+      if (count >= dispLength) return i;
     }
-    return i ;
+    return i;
   }
 
   get minScrollHeight(): number {
-//    let length = this.chatTab ? this.chatTab.chatMessages.length : this.sampleMessages.length;
+    //    let length = this.chatTab ? this.chatTab.chatMessages.length : this.sampleMessages.length;
     let length = this.chatTab ? this.chatTab.displayableMessagesLength() : this.sampleMessages.length;
     console.log('minScrollHeight' + length);
     return (length < 10000 ? length : 10000) * this.minMessageHeight;
@@ -177,7 +179,7 @@ export class ChatTabComponent implements OnInit, AfterViewInit, OnDestroy, OnCha
       })
       .on('RE_DRAW_CHAT', event => {
         console.log('チャット再描画');
-        setTimeout(() => this.redraw() , 0);
+        setTimeout(() => this.redraw(), 0);
         // フラグの更新前にイベントが走るためタイマーを使う。ひとまずやむなし
       });
   }
@@ -225,15 +227,15 @@ export class ChatTabComponent implements OnInit, AfterViewInit, OnDestroy, OnCha
 
   resetMessages() {
     let lastIndex = this.chatTab.chatMessages.length - 1;
-//    this.topIndex = lastIndex - Math.floor(this.panelService.scrollablePanel.clientHeight / this.minMessageHeight);
-    this.topIndex = this.chatMessagesDisplayableTopIndex( this.chatTab.chatMessages, Math.floor(this.panelService.scrollablePanel.clientHeight / this.minMessageHeight) + 1 );
+    //    this.topIndex = lastIndex - Math.floor(this.panelService.scrollablePanel.clientHeight / this.minMessageHeight);
+    this.topIndex = this.chatMessagesDisplayableTopIndex(this.chatTab.chatMessages, Math.floor(this.panelService.scrollablePanel.clientHeight / this.minMessageHeight) + 1);
     this.bottomIndex = lastIndex;
     this.needUpdate = true;
     this.preScrollTop = -1;
     this.scrollSpeed = 0;
     this.topElm = this.bottomElm = null;
     this.adjustIndex();
-    console.log('resetMessages top:' + this.topIndex + ' bottom:' + this.bottomIndex );
+    console.log('resetMessages top:' + this.topIndex + ' bottom:' + this.bottomIndex);
     this.changeDetector.markForCheck();
   }
 

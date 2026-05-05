@@ -29,7 +29,12 @@ export class PasswordCheckComponent implements OnInit, AfterViewInit, OnDestroy 
     private panelService: PanelService,
     private modalService: ModalService
   ) {
-    this.targetPeerContext = modalService.option.peerId ? PeerContext.parse(modalService.option.peerId) : PeerContext.parse('???');
+    const peers = modalService.option.peers;
+    if (peers && peers.length > 0) {
+      this.targetPeerContext = peers[0];
+    } else {
+      this.targetPeerContext = modalService.option.peerId ? PeerContext.parse(modalService.option.peerId) : PeerContext.parse('???');
+    }
     this.title = modalService.option.title ? modalService.option.title : '';
   }
 
@@ -51,7 +56,10 @@ export class PasswordCheckComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   submit() {
-    if (this.targetPeerContext.verifyPassword(this.password)) this.modalService.resolve(this.password);
-    this.help = 'パスワードが違います';
+    if (this.targetPeerContext.verifyPassword(this.password)) {
+      this.modalService.resolve(this.password);
+    } else {
+      this.help = 'パスワードが違います';
+    }
   }
 }
